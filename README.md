@@ -29,3 +29,13 @@ Diese resultieren aus:
 - 63 in Kapitel 1.2.1
 - 18 in Kapitel 1.2.2
 - 3 in Kapitel 2
+
+## Autoren
+
+Erstellt durch die Mitwirkenden (Contributors) an diesem Repository. Die Benchmark-Dateien basieren auf der Vorlage zur Bachelorarbeit aus dem Github-Repository <a href="https://github.com/Schlump02/barm-latex-vorlagen">barm-latex-vorlagen</a>.
+
+## Lizenz / License
+
+Creative Commons CC BY 4.0
+
+<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a>
