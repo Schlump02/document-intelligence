@@ -14,7 +14,6 @@ tester.tex
 
 *.synctex
 *.synctex(busy)
-*.pdf
 *.aux
 *.bcf
 *.lof
