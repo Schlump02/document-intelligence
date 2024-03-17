@@ -5,7 +5,7 @@
 /.venv
 
 /out
-/latex-cache
+/latex-cache/*
 
 TODO.md
 rename.sh
