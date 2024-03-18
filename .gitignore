@@ -1,16 +1,16 @@
 /.vscode
-/node_modules
-/dist
-/venv
-/.venv
+node_modules
+dist
+venv
+.venv
 
-/out
-/latex-cache/*
+out
+latex-cache/*
 
-TODO.md
 rename.sh
 tester.tex
 .env
+*output*
 
 *.synctex
 *.synctex(busy)
@@ -31,3 +31,4 @@ tester.tex
 *.mf
 .DS_Store
 .vscode/ltex.hiddenFalsePositives.de-DE.txt
+benchmark/latex-cache/main.pdf
