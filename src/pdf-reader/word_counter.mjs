@@ -14,6 +14,15 @@ console.log = function(...args) {
     stream.write(message + '\n');
 };
 
+function isChapterAfterLastSection(headline){
+    const endingChapters = ["Anhang", "Literaturverzeichnis", "Ehrenwörtliche", "Eidesstattliche"];
+    const headlineWords = headline.split(" ");
+    for(let word of headlineWords){
+        if(endingChapters.includes(word)){ return true; }
+    }
+    return false;
+}
+
 
 async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
@@ -21,9 +30,10 @@ async function countWords(src) {
     let headline = "";
     let currentCounts = {"text": 0, "quotes": 0, "footnotes": 0};
     //let flags = {""}
-    let firstHeadlineFound = false;
+    let firstSectionFound = false;
     
-    for(var i = 1; i <= doc.numPages; i++){
+    
+    for(let i = 1; i <= doc.numPages; i++){
         const pageContent = await doc.getPage(i).then(page => page.getTextContent());
         
         for(let item of pageContent.items){
@@ -31,27 +41,41 @@ async function countWords(src) {
             let fontsize = Math.round(item["height"]);
             let x = Math.round(item["transform"][4]);
             let y = Math.round(item["transform"][5]);
-            // look for headline
+            
             if(fontsize === 14){
-                wordCounts.push({"headline": headline, "counts": currentCounts})
-                headline = "";
-                currentCounts= {"text": 0, "quotes": 0, "footnotes": 0};
+                // new headline found
+                let prevHeadline = headline;
+                headline = item["str"];
                 
-                firstHeadlineFound = true;
-                headline += item["str"];
+                if(firstSectionFound){
+                    // save word counts
+                    wordCounts.push({"headline": prevHeadline, "counts": currentCounts})
+                
+                    if(isChapterAfterLastSection(headline)){
+                        return wordCounts;// iterated through all sections, finish counting
+                    }
+                    // otherwise, re-initialize values
+                    currentCounts= {"text": 0, "quotes": 0, "footnotes": 0};
+                }
+                else if(headline.startsWith("1 ")){
+                    firstSectionFound = true;// first section found, start counting with the next string
+                    continue;
+                }
             }
             
-            // skip word counting
-            if(!firstHeadlineFound          // 
+            // skip word counting?
+            if(!firstSectionFound           // don't count words outside of sections
                 || item["str"].length < 1   // no words to count
                 || y < 60)                  // only page numbers are placed this low
             { continue; }
             
             else if(fontsize === 10 && x === 83){
-                currentCounts["footnotes"] += item["str"].split(" ");
+                //currentCounts["footnotes"] += item["str"].split(" ");
+                currentCounts["footnotes"] += item["str"].split(" ").length;
             }
             else if(fontsize === 12){
-                currentCounts["text"] += item["str"].split(" ");
+                //currentCounts["text"] += item["str"].split(" ");
+                currentCounts["text"] += item["str"].split(" ").length;
             }
         }
     }
