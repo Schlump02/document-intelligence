@@ -6,6 +6,9 @@ import path from 'path';
 const filePath = path.join('.', 'console_output.json');
 
 // Create a writable stream to the file
+const clearStream = fs.createWriteStream(filePath, { flags: 'w' }); // 'w' flag clears the file
+clearStream.end();
+
 const stream = fs.createWriteStream(filePath, { flags: 'a' }); // 'a' flag appends to the file
 
 // Redirect console output to the writable stream
@@ -33,7 +36,7 @@ function getSanitizedWords(rawStr){
     rawStr = rawStr.replace('"', ' " ').replace('„', ' „ ').replace('“', ' “ ');
     
     const unwantedWords = ["", ",", ".", ";", ":", "-", "_", "|", "!", "?", "'",
-                            "\"", "/", "\\", "(", ")", "[", "]", "{", "}", "<",
+                            "`", "/", "\\", "(", ")", "[", "]", "{", "}", "<",
                             ">", "*", "&", "#", "@", "%", "^", "=", "+", "~",
                             "•", "$", "€", "–", "[]", "[.]", "[..]", "[...]"
                         ];
@@ -55,7 +58,7 @@ async function countWords(src) {
     let wordCounts = [];
     let headline = "";
     let currentCounts = {"text": 0, "quotes": 0, "footnotes": 0};
-    let currentWords = {"text": "", "quotes": "", "footnotes": ""};
+    let currentWords = {"text": [], "quotes": [], "footnotes": []};
     
     let firstSectionFound = false;
     let insideQuote = false;
@@ -83,7 +86,7 @@ async function countWords(src) {
                     }
                     // otherwise, re-initialize values
                     currentCounts= {"text": 0, "quotes": 0, "footnotes": 0};
-                    currentWords = {"text": "", "quotes": "", "footnotes": ""};
+                    currentWords = {"text": [], "quotes": [], "footnotes": []};
                     insideQuote = false;
                 }
                 else if(headline.startsWith("1 ")){
@@ -100,9 +103,11 @@ async function countWords(src) {
             
             let words = getSanitizedWords(item["str"]);
             
+            if(!words || !words.length){ continue; }// no words to count
+            
             if(fontsize === 10 && x === 83){
                 // footnotes
-                currentWords["footnotes"] += " " + item["str"];
+                currentWords["footnotes"].push(...words);
                 currentCounts["footnotes"] += words.length;
             }
             else if(fontsize === 12){
@@ -110,19 +115,26 @@ async function countWords(src) {
                 if(!containsQuotes(item["str"])){
                     if(!insideQuote){
                         // no quote shenanigans
-                        currentWords["text"] += " " + words.join(" ");
+                        currentWords["text"].push(...words);
                         currentCounts["text"] += words.length;
                     }
                     else{
                         // only words in quotes
-                        currentWords["quotes"] += " " + words.join(" ");
+                        currentWords["quotes"].push(...words);
                         currentCounts["quotes"] += words.length;
                     }
                 }
                 else{
                     // quote shenanigans
                     for(let word of words){
-                        containsQuotes(word);
+                        if(containsQuotes(word)){
+                            // the word is a quotation mark
+                            insideQuote = !insideQuote;
+                            continue;
+                        }
+                        let wordType = insideQuote ? "quotes" : "text";
+                        currentWords[wordType].push(word);
+                        currentCounts[wordType] += 1;
                     }
                 }
             }
