@@ -1,6 +1,6 @@
 # Skripte zur Dokumentenanalyse
 
-## Wörter zählen
+### Wörter zählen
 
 ## Nutzung
 
