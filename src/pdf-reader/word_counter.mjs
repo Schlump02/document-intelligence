@@ -23,15 +23,20 @@ function isChapterAfterLastSection(headline){
     return false;
 }
 
+function containsQuotes(str){
+    return str.includes('"') || str.includes("„") || str.includes("“")
+}
+
 
 async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
     let wordCounts = [];
     let headline = "";
     let currentCounts = {"text": 0, "quotes": 0, "footnotes": 0};
-    //let flags = {""}
-    let firstSectionFound = false;
+    let currentWords = {"text": "", "quotes": "", "footnotes": ""};
     
+    let firstSectionFound = false;
+    let insideQuote = false;
     
     for(let i = 1; i <= doc.numPages; i++){
         const pageContent = await doc.getPage(i).then(page => page.getTextContent());
@@ -49,13 +54,15 @@ async function countWords(src) {
                 
                 if(firstSectionFound){
                     // save word counts
-                    wordCounts.push({"headline": prevHeadline, "counts": currentCounts})
-                
+                    wordCounts.push({"headline": prevHeadline, "counts": currentCounts, "words": currentWords})
+                    
                     if(isChapterAfterLastSection(headline)){
                         return wordCounts;// iterated through all sections, finish counting
                     }
                     // otherwise, re-initialize values
                     currentCounts= {"text": 0, "quotes": 0, "footnotes": 0};
+                    currentWords = {"text": "", "quotes": "", "footnotes": ""};
+                    insideQuote = false;
                 }
                 else if(headline.startsWith("1 ")){
                     firstSectionFound = true;// first section found, start counting with the next string
@@ -69,13 +76,33 @@ async function countWords(src) {
                 || y < 60)                  // only page numbers are placed this low
             { continue; }
             
-            else if(fontsize === 10 && x === 83){
-                //currentCounts["footnotes"] += item["str"].split(" ");
-                currentCounts["footnotes"] += item["str"].split(" ").length;
+            let words = item["str"].split(" ");
+            
+            if(fontsize === 10 && x === 83){
+                // footnotes
+                currentWords["footnotes"] += " " + item["str"];
+                currentCounts["footnotes"] += words.length;
             }
             else if(fontsize === 12){
-                //currentCounts["text"] += item["str"].split(" ");
-                currentCounts["text"] += item["str"].split(" ").length;
+                // words within text
+                if(!containsQuotes(item["str"])){
+                    if(!insideQuote){
+                        // no quote shenanigans
+                        currentWords["text"] += " " + item["str"];
+                        currentCounts["text"] += words.length;
+                    }
+                    else{
+                        // only words in quotes
+                        currentWords["quotes"] += " " + item["str"];
+                        currentCounts["quotes"] += words.length;
+                    }
+                }
+                else{
+                    // quote shenanigans
+                    for(let word of words){
+                        containsQuotes(word);
+                    }
+                }
             }
         }
     }
