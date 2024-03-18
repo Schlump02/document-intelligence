@@ -22,9 +22,31 @@ function isChapterAfterLastSection(headline){
     }
     return false;
 }
-
 function containsQuotes(str){
     return str.includes('"') || str.includes("„") || str.includes("“")
+}
+
+/**
+ * removes empty spaces, punctuation marks and similar unwanted strings. Treats quotation marks as separate words.
+ */
+function getSanitizedWords(rawStr){
+    rawStr = rawStr.replace('"', ' " ').replace('„', ' „ ').replace('“', ' “ ');
+    
+    const unwantedWords = ["", ",", ".", ";", ":", "-", "_", "|", "!", "?", "'",
+                            "\"", "/", "\\", "(", ")", "[", "]", "{", "}", "<",
+                            ">", "*", "&", "#", "@", "%", "^", "=", "+", "~",
+                            "•", "$", "€", "–", "[]", "[.]", "[..]", "[...]"
+                        ];
+    const rawWords = rawStr.split(" ");
+    let words = [];
+    
+    for(let word of rawWords){
+        word = word.trim();
+        if(!unwantedWords.includes(word)){
+            words.push(word);
+        }
+    }
+    return words;
 }
 
 
@@ -76,7 +98,7 @@ async function countWords(src) {
                 || y < 60)                  // only page numbers are placed this low
             { continue; }
             
-            let words = item["str"].split(" ");
+            let words = getSanitizedWords(item["str"]);
             
             if(fontsize === 10 && x === 83){
                 // footnotes
@@ -88,12 +110,12 @@ async function countWords(src) {
                 if(!containsQuotes(item["str"])){
                     if(!insideQuote){
                         // no quote shenanigans
-                        currentWords["text"] += " " + item["str"];
+                        currentWords["text"] += " " + words.join(" ");
                         currentCounts["text"] += words.length;
                     }
                     else{
                         // only words in quotes
-                        currentWords["quotes"] += " " + item["str"];
+                        currentWords["quotes"] += " " + words.join(" ");
                         currentCounts["quotes"] += words.length;
                     }
                 }
@@ -110,7 +132,7 @@ async function countWords(src) {
 }
 
 
-const pdfPath = 'C:/Users/Jona/Repositories/document-intelligence/benchmark/main.pdf';
+const pdfPath = '../../benchmark/main.pdf';
 //console.log(countWords(pdfPath));
 const output = await countWords(pdfPath);
 console.log(output);
