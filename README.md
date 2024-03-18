@@ -2,6 +2,11 @@
 
 ## Wörter zählen
 
+## Nutzung
+
+> [!CAUTION]
+> Der Code ist aktuell noch nicht für den praktischen Einsatz sinnvoll anwendbar.
+
 ### Benchmark-Dateien
 
 Die Benchmark PDF-Datei enthält:
