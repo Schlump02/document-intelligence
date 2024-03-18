@@ -1,8 +1,8 @@
 # Skripte zur Dokumentenanalyse
 
-### Wörter zählen
+## Wörter zählen
 
-## Nutzung
+### Nutzung
 
 > [!CAUTION]
 > Der Code ist aktuell noch nicht für den praktischen Einsatz sinnvoll anwendbar.
