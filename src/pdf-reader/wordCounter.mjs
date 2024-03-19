@@ -1,21 +1,4 @@
 import * as pdfjs from "pdfjs-dist";
-import fs from 'fs';
-import path from 'path';
-
-// Define the file path where you want to save the console output
-const filePath = path.join('.', 'console_output.json');
-
-// Create a writable stream to the file
-const clearStream = fs.createWriteStream(filePath, { flags: 'w' }); // 'w' flag clears the file
-clearStream.end();
-
-const stream = fs.createWriteStream(filePath, { flags: 'a' }); // 'a' flag appends to the file
-
-// Redirect console output to the writable stream
-console.log = function(...args) {
-    const message = args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg, null, 2)).join(' ');
-    stream.write(message + '\n');
-};
 
 function isChapterAfterLastSection(headline){
     const endingChapters = ["Anhang", "Literaturverzeichnis", "Ehrenwörtliche", "Eidesstattliche"];
@@ -57,7 +40,7 @@ function getSanitizedWords(rawStr){
 }
 
 
-async function countWords(src) {
+export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
     let wordCounts = [];
     let headline = "";
@@ -148,10 +131,7 @@ async function countWords(src) {
 }
 
 
-const pdfPath = '../../benchmark/main.pdf';
+//const pdfPath = '../../benchmark/main.pdf';
 //console.log(countWords(pdfPath));
-const output = await countWords(pdfPath);
-console.log(output);
-
-// Close the stream when done
-stream.end();
+//const output = await countWords(pdfPath);
+//console.log(output);
