@@ -30,15 +30,19 @@ function containsQuotes(str){
 }
 
 /**
- * removes empty spaces, punctuation marks and similar unwanted strings. Treats quotation marks as separate words.
+ * removes empty spaces, punctuation marks and similar unwanted strings. Treats certain special characters as separate words.
  */
 function getSanitizedWords(rawStr){
-    rawStr = rawStr.replace('"', ' " ').replace('„', ' „ ').replace('“', ' “ ');
+    const charsAsWords = ['"', '„', '“', "f.", "–", "."]
+    // treat these characters as words, making it easier to filter them out later
+    for(let char of charsAsWords){
+        rawStr = rawStr.replace(char, ' ' + char + ' ')
+    }
     
-    const unwantedWords = ["", ",", ".", ";", ":", "-", "_", "|", "!", "?", "'",
-                            "`", "/", "\\", "(", ")", "[", "]", "{", "}", "<",
+    const unwantedWords = ["", ",", ".", ";", ":", "-", "_", "|", "!", "?", "'", "²",
+                            "`", "/", "\\", "(", ")", "[", "]", "{", "}", "<", "³",
                             ">", "*", "&", "#", "@", "%", "^", "=", "+", "~",
-                            "•", "$", "€", "–", "[]", "[.]", "[..]", "[...]"
+                            "•", "$", "€", "[sic]", "[sic!]", "(!)", "[!]"
                         ];
     const rawWords = rawStr.split(" ");
     let words = [];
