@@ -32,9 +32,6 @@ function getPlausibleNumbering(subHeadline){
 
 function isSubsectionHeading(item, currentSubHeadline, defaultFontName){
     // headlines must start with a number and contain a space, they also use a different font
-    console.log(item, currentSubHeadline, defaultFontName, (isNaN(currentSubHeadline[0])
-    || !currentSubHeadline.includes(" ")
-    || item["fontName"] == defaultFontName));
     if(isNaN(currentSubHeadline[0])
         || !currentSubHeadline.includes(" ")
         || item["fontName"] == defaultFontName)
@@ -99,7 +96,6 @@ export default async function countWords(src) {
         const pageContent = await doc.getPage(i).then(page => page.getTextContent());
         
         for(let item of pageContent.items){
-            //console.log(item);
             let fontsize = Math.round(item["height"]);
             let x = Math.round(item["transform"][4]);
             let y = Math.round(item["transform"][5]);
