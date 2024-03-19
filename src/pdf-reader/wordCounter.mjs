@@ -8,24 +8,58 @@ function isChapterAfterLastSection(headline){
     }
     return false;
 }
-function containsQuotes(str){
-    return str.includes('"') || str.includes("„") || str.includes("“")
+
+/**
+ * returns the possible ways for the next subsection numbering
+ * e.g. 1.2.3 -> [1.2.3.1, 1.2.4, 1.3]
+ */
+function getPlausibleNumbering(subHeadline){
+    // get the numbering of the headline
+    const numbering = subHeadline.split(" ")[0];
+    const numbers = numbering.split(".");
+    let num = "";
+    
+    // a new subsection is always possible
+    const plausibleNumbering = [numbering + ".1"];
+    
+    // find all ways that this section or higher order sections might continue
+    for(let i = 2; i <= numbers.length; i++){
+        num = numbers.slice(0, i-1).join('.') + "." + (parseInt(numbers[i-1]) + 1);
+        plausibleNumbering.push(num);
+    }
+    return plausibleNumbering;
+}
+
+function isSubsectionHeading(item, currentSubHeadline, defaultFontName){
+    // headlines must start with a number and contain a space, they also use a different font
+    console.log(item, currentSubHeadline, defaultFontName, (isNaN(currentSubHeadline[0])
+    || !currentSubHeadline.includes(" ")
+    || item["fontName"] == defaultFontName));
+    if(isNaN(currentSubHeadline[0])
+        || !currentSubHeadline.includes(" ")
+        || item["fontName"] == defaultFontName)
+    { return false; }
+    
+    let plausibleNumbering = getPlausibleNumbering(currentSubHeadline);
+    
+    // new headline must start with a plausible numbering 
+    return plausibleNumbering.includes(item["str"].split(" ")[0])
 }
 
 /**
  * removes empty spaces, punctuation marks and similar unwanted strings. Treats certain special characters as separate words.
  */
 function getSanitizedWords(rawStr){
-    const charsAsWords = ['"', '„', '“', "f.", "–", "."]
+    const charsAsWords = ['"', '„', '“', "f\\.", "–", "\\."]
     // treat these characters as words, making it easier to filter them out later
     for(let char of charsAsWords){
-        rawStr = rawStr.replace(char, ' ' + char + ' ')
+        rawStr = rawStr.replace(new RegExp(char, "g"), ' ' + char + ' ')
     }
     
     const unwantedWords = ["", ",", ".", ";", ":", "-", "_", "|", "!", "?", "'", "²",
                             "`", "/", "\\", "(", ")", "[", "]", "{", "}", "<", "³",
-                            ">", "*", "&", "#", "@", "%", "^", "=", "+", "~",
-                            "•", "$", "€", "[sic]", "[sic!]", "(!)", "[!]"
+                            "•", "$", "€", "[sic]", "[sic!]", "(!)", "[!]", "\\.",
+                            ">", "*", "&", "#", "@", "%", "^", "=", "+", "~"
                         ];
     const rawWords = rawStr.split(" ");
     let words = [];
@@ -39,13 +73,19 @@ function getSanitizedWords(rawStr){
     return words;
 }
 
+function containsQuotes(str){
+    return str.includes('"') || str.includes("„") || str.includes("“")
+}
+
 
 export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
     let wordCounts = [];
-    let headline = "";
     let currentCounts = {"text": 0, "quotes": 0, "footnotes": 0};
     let currentWords = {"text": [], "quotes": [], "footnotes": []};
+    let headline = "";
+    let subHeadline = "";
+    let defaultFontName = "";
     
     let firstSectionFound = false;
     let insideQuote = false;
@@ -60,13 +100,14 @@ export default async function countWords(src) {
             let y = Math.round(item["transform"][5]);
             
             if(fontsize === 14){
-                // new headline found
-                let prevHeadline = headline;
+                // new section headline found
+                let prevHeadline = subHeadline;
                 headline = item["str"];
+                subHeadline = headline;
                 
                 if(firstSectionFound){
                     // save word counts
-                    wordCounts.push({"headline": prevHeadline, "counts": currentCounts, "words": currentWords})
+                    wordCounts.push({"headline": prevHeadline, "counts": currentCounts, "words": currentWords});
                     
                     if(isChapterAfterLastSection(headline)){
                         return wordCounts;// iterated through all sections, finish counting
@@ -88,8 +129,8 @@ export default async function countWords(src) {
                 || y < 60)                  // only page numbers are placed this low
             { continue; }
             
+            // sanitize words before counting
             let words = getSanitizedWords(item["str"]);
-            
             if(!words || !words.length){ continue; }// no words to count
             
             if(fontsize === 10 && x === 83){
@@ -98,7 +139,23 @@ export default async function countWords(src) {
                 currentCounts["footnotes"] += words.length;
             }
             else if(fontsize === 12){
-                // words within text
+                // search for subsections
+                if(isSubsectionHeading(item, subHeadline, defaultFontName)){
+                    // save word counts
+                    wordCounts.push({"headline": subHeadline, "counts": currentCounts, "words": currentWords});
+                    
+                    // re-initialize values
+                    currentCounts= {"text": 0, "quotes": 0, "footnotes": 0};
+                    currentWords = {"text": [], "quotes": [], "footnotes": []};
+                    insideQuote = false;
+                    subHeadline = item["str"];
+                    continue;
+                }
+                
+                // words are in text within a section
+                defaultFontName = item["fontName"];
+                
+                // count words inside or outside of quotes
                 if(!containsQuotes(item["str"])){
                     if(!insideQuote){
                         // no quote shenanigans

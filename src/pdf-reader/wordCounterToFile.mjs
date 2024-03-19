@@ -6,8 +6,8 @@ import path from 'path';
 const filePath = path.join('.', 'console_output.json');
 
 // Create a writable stream to the file
-//const clearStream = fs.createWriteStream(filePath, { flags: 'w' }); // 'w' flag clears the file
-//clearStream.end();
+const clearStream = fs.createWriteStream(filePath, { flags: 'w' }); // 'w' flag clears the file
+clearStream.end();
 
 const stream = fs.createWriteStream(filePath, { flags: 'a' }); // 'a' flag appends to the file
 

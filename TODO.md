@@ -1,6 +1,6 @@
 ## PDF-Reader
 - support headlines spanning over multiple lines
-- separate word counter and output logic
+- map footnotes and their footnotemarks
 
 - avoid tables
 - avoid equations
