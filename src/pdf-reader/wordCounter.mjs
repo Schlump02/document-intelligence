@@ -77,6 +77,11 @@ function containsQuotes(str){
     return str.includes('"') || str.includes("„") || str.includes("“")
 }
 
+function removeQuotationMarks(words){
+    const marks = ['"', '„', '“'];
+    return words.filter(element => !marks.includes(element));
+}
+
 
 export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
@@ -135,6 +140,7 @@ export default async function countWords(src) {
             
             if(fontsize === 10 && x === 83){
                 // footnotes
+                words = removeQuotationMarks(words);
                 currentWords["footnotes"].push(...words);
                 currentCounts["footnotes"] += words.length;
             }
