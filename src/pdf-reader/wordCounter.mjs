@@ -83,6 +83,9 @@ function removeQuotationMarks(words){
 export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
     let wordCounts = [];
+    let footnoteHeadlines = [];
+    let footnoteCount = 0;
+    
     let currentCounts = {"text": 0, "quotes": 0, "footnotes": 0};
     let currentWords = {"text": [], "quotes": [], "footnotes": []};
     let headline = "";
@@ -130,15 +133,36 @@ export default async function countWords(src) {
                 || y < 60)                  // only page numbers are placed this low
             { continue; }
             
+            else if(fontsize === 7 || fontsize === 8){
+                // likely a footnotemark - do not count as word, but make sure
+                // the footnote words will counted for the correct headline
+                let markNum = parseInt(item["str"]);
+                // check if the mark isn't placed at the page bottom
+                //  and that the mark contains next expected number
+                if(x !== 76 && markNum && markNum == footnoteCount + 1){
+                    footnoteHeadlines.push(subHeadline);
+                    footnoteCount += 1
+                }
+            }
+            
             // sanitize words before counting
             let words = getSanitizedWords(item["str"]);
             if(!words || !words.length){ continue; }// no words to count
             
             if(fontsize === 10 && x === 83){
-                // footnotes
+                // words in footnotes
                 words = removeQuotationMarks(words);
-                currentWords["footnotes"].push(...words);
-                currentCounts["footnotes"] += words.length;
+                // make sure to assign the words and word counts to the correct headline
+                let correspondingHeadline = footnoteHeadlines.shift();
+                if(subHeadline === correspondingHeadline){
+                    currentWords["footnotes"].push(...words);
+                    currentCounts["footnotes"] += words.length;
+                }
+                else{
+                    let wordCountElement = wordCounts.find(item => item.headline === correspondingHeadline);
+                    wordCountElement["words"]["footnotes"].push(...words);
+                    wordCountElement["counts"]["footnotes"] += words.length;
+                }
             }
             else if(fontsize === 12){
                 // search for subsections
@@ -155,6 +179,7 @@ export default async function countWords(src) {
                 }
                 
                 // words are in text within a section
+                
                 defaultFontName = item["fontName"];
                 
                 // count words inside or outside of quotes
