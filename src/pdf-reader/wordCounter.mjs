@@ -86,12 +86,13 @@ function removeQuotationMarks(words){
 
 export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
-    let wordCounts = [];
+    
     let footnoteHeadlines = [];
     let footnoteCount = 0;
     
     let [currentCounts, currentWords, insideQuote] = initializeStateVars();
     
+    let [wordCounts, warnings, ignoredWords] = [[], [], []];
     let [headline, subHeadline, defaultFontName] = ["", "", ""];
     let [firstSectionFound, itemShouldStartANewLine, searchingForNewLine] = [false, false, false];
     
@@ -114,7 +115,9 @@ export default async function countWords(src) {
                     wordCounts.push({"headline": prevHeadline, "counts": currentCounts, "words": currentWords});
                     
                     if(isChapterAfterLastSection(headline)){
-                        return wordCounts;// iterated through all sections, finish counting
+                        // iterated through all sections, finish counting
+                        warnings.push("Word count stopped after reaching headline: " + headline);
+                        return {"wordCounts": wordCounts, "warnings": warnings, "ignoredWords": ignoredWords};
                     }
                     // otherwise, re-initialize values
                     [currentCounts, currentWords, insideQuote] = initializeStateVars();
@@ -190,7 +193,10 @@ export default async function countWords(src) {
                         // from a line that started at the left side of the page (to table or similar)
                         defaultFontName = item["fontName"];
                     }
-                    else{ continue; }
+                    else{
+                        ignoredWords.push({"words": words, "reason": "Bad word indent in first text under headline " + subHeadline});
+                        continue;
+                    }
                 }
                 
                 if((itemShouldStartANewLine || searchingForNewLine) && x != 71){
@@ -198,6 +204,7 @@ export default async function countWords(src) {
                     // at suspicious x value (likely text in table/equation)
                     itemShouldStartANewLine = true;
                     searchingForNewLine = true;
+                    ignoredWords.push({"words": words, "reason": "Bad word indent text under headline " + subHeadline});
                     continue;
                 }
                 searchingForNewLine = false;
@@ -234,7 +241,10 @@ export default async function countWords(src) {
             }
         }
     }
-    return wordCounts;
+    if(!firstSectionFound){ warnings.push("No first Section headline was found.") }
+    else{ warnings.push("No chapter after last Section was found.") }
+    
+    return {"wordCounts": wordCounts, "warnings": warnings, "ignoredWords": ignoredWords};
 }
 
 
