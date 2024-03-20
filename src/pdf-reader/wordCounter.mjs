@@ -1,5 +1,9 @@
 import * as pdfjs from "pdfjs-dist";
 
+function initializeStateVars(){
+    return [{"text": 0, "quotes": 0, "footnotes": 0}, {"text": [], "quotes": [], "footnotes": []}, false]
+}
+
 function isChapterAfterLastSection(headline){
     const endingChapters = ["Anhang", "Literaturverzeichnis", "Ehrenwörtliche", "Eidesstattliche"];
     const headlineWords = headline.split(" ");
@@ -86,16 +90,10 @@ export default async function countWords(src) {
     let footnoteHeadlines = [];
     let footnoteCount = 0;
     
-    let currentCounts = {"text": 0, "quotes": 0, "footnotes": 0};
-    let currentWords = {"text": [], "quotes": [], "footnotes": []};
-    let headline = "";
-    let subHeadline = "";
-    let defaultFontName = "";
+    let [currentCounts, currentWords, insideQuote] = initializeStateVars();
     
-    let firstSectionFound = false;
-    let insideQuote = false;
-    let itemShouldStartANewLine = false;
-    let searchingForNewLine = false;
+    let [headline, subHeadline, defaultFontName] = ["", "", ""];
+    let [firstSectionFound, itemShouldStartANewLine, searchingForNewLine] = [false, false, false];
     
     for(let i = 1; i <= doc.numPages; i++){
         const pageContent = await doc.getPage(i).then(page => page.getTextContent());
@@ -119,9 +117,7 @@ export default async function countWords(src) {
                         return wordCounts;// iterated through all sections, finish counting
                     }
                     // otherwise, re-initialize values
-                    currentCounts= {"text": 0, "quotes": 0, "footnotes": 0};
-                    currentWords = {"text": [], "quotes": [], "footnotes": []};
-                    insideQuote = false;
+                    [currentCounts, currentWords, insideQuote] = initializeStateVars();
                 }
                 else if(headline.startsWith("1 ")){
                     firstSectionFound = true;// first section found, start counting with the next string
@@ -134,7 +130,7 @@ export default async function countWords(src) {
             if(!firstSectionFound           // don't count words outside of sections
                 || item["str"].length < 1   // no words to count
                 || y < 60){                 // only page numbers are placed this low
-                    
+                
                 itemShouldStartANewLine = item["hasEOL"];
                 continue;
             }
@@ -144,7 +140,7 @@ export default async function countWords(src) {
                 // the footnote words will counted for the correct headline
                 let markNum = parseInt(item["str"]);
                 // check if the mark isn't placed at the page bottom
-                //  and that the mark contains next expected number
+                // and that the mark contains next expected number
                 if(x !== 76 && markNum && markNum == footnoteCount + 1){
                     footnoteHeadlines.push(subHeadline);
                     footnoteCount += 1
@@ -181,9 +177,7 @@ export default async function countWords(src) {
                     wordCounts.push({"headline": subHeadline, "counts": currentCounts, "words": currentWords});
                     
                     // re-initialize values
-                    currentCounts= {"text": 0, "quotes": 0, "footnotes": 0};
-                    currentWords = {"text": [], "quotes": [], "footnotes": []};
-                    insideQuote = false;
+                    [currentCounts, currentWords, insideQuote] = initializeStateVars();
                     subHeadline = item["str"];
                     itemShouldStartANewLine = item["hasEOL"];
                     continue;
@@ -196,9 +190,7 @@ export default async function countWords(src) {
                         // from a line that started at the left side of the page (to table or similar)
                         defaultFontName = item["fontName"];
                     }
-                    else{
-                        continue;
-                    }
+                    else{ continue; }
                 }
                 
                 if((itemShouldStartANewLine || searchingForNewLine) && x != 71){
