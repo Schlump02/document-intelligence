@@ -94,6 +94,8 @@ export default async function countWords(src) {
     
     let firstSectionFound = false;
     let insideQuote = false;
+    let itemShouldStartANewLine = false;
+    let searchingForNewLine = false;
     
     for(let i = 1; i <= doc.numPages; i++){
         const pageContent = await doc.getPage(i).then(page => page.getTextContent());
@@ -123,6 +125,7 @@ export default async function countWords(src) {
                 }
                 else if(headline.startsWith("1 ")){
                     firstSectionFound = true;// first section found, start counting with the next string
+                    itemShouldStartANewLine = item["hasEOL"];
                     continue;
                 }
             }
@@ -130,8 +133,11 @@ export default async function countWords(src) {
             // skip word counting?
             if(!firstSectionFound           // don't count words outside of sections
                 || item["str"].length < 1   // no words to count
-                || y < 60)                  // only page numbers are placed this low
-            { continue; }
+                || y < 60){                 // only page numbers are placed this low
+                    
+                itemShouldStartANewLine = item["hasEOL"];
+                continue;
+            }
             
             else if(fontsize === 7 || fontsize === 8){
                 // likely a footnotemark - do not count as word, but make sure
@@ -147,7 +153,11 @@ export default async function countWords(src) {
             
             // sanitize words before counting
             let words = getSanitizedWords(item["str"]);
-            if(!words || !words.length){ continue; }// no words to count
+            if(!words || !words.length){
+                // no words to count
+                itemShouldStartANewLine = item["hasEOL"];
+                continue;
+            }
             
             if(fontsize === 10 && x === 83){
                 // words in footnotes
@@ -175,12 +185,33 @@ export default async function countWords(src) {
                     currentWords = {"text": [], "quotes": [], "footnotes": []};
                     insideQuote = false;
                     subHeadline = item["str"];
+                    itemShouldStartANewLine = item["hasEOL"];
                     continue;
                 }
                 
-                // words are in text within a section
+                // find the default text font name, then make sure that font is used before counting words
+                if(!defaultFontName){
+                    if(x === 71){
+                        // found the font that is used inside the text
+                        // from a line that started at the left side of the page (to table or similar)
+                        defaultFontName = item["fontName"];
+                    }
+                    else{
+                        continue;
+                    }
+                }
                 
-                defaultFontName = item["fontName"];
+                if((itemShouldStartANewLine || searchingForNewLine) && x != 71){
+                    // line starts or previous word in line started
+                    // at suspicious x value (likely text in table/equation)
+                    itemShouldStartANewLine = true;
+                    searchingForNewLine = true;
+                    continue;
+                }
+                searchingForNewLine = false;
+                itemShouldStartANewLine = item["hasEOL"];
+                
+                // words are in text within a section
                 
                 // count words inside or outside of quotes
                 if(!containsQuotes(item["str"])){

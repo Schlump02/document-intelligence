@@ -1,9 +1,6 @@
 ## PDF-Reader
 - support headlines spanning over multiple lines
-
-- avoid tables
-- avoid equations
-- avoid code blocks
+- add warnings
 
 ### allow different options (?)
 - dont count single characters
