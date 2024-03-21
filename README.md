@@ -6,8 +6,6 @@
 
 > [!CAUTION]
 > Der Code ist aktuell noch nicht für den praktischen Einsatz sinnvoll anwendbar.
-> - Test
->   - Test2
 
 ### Benchmark-Dateien
 
