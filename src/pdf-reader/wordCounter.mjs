@@ -60,7 +60,7 @@ function getSanitizedWords(rawStr){
     const unwantedWords = ["", ",", ".", ";", ":", "-", "_", "|", "!", "?", "'", "²",
                             "`", "/", "\\", "(", ")", "[", "]", "{", "}", "<", "³",
                             "•", "$", "€", "[sic]", "[sic!]", "(!)", "[!]", "\\.",
-                            ">", "*", "&", "#", "@", "%", "^", "=", "+", "~"
+                            ">", "*", "&", "#", "@", "%", "^", "=", "+", "~", "–"
                         ];
     const rawWords = rawStr.split(" ");
     let words = [];
@@ -140,7 +140,7 @@ export default async function countWords(src) {
             
             else if(fontsize === 7 || fontsize === 8){
                 // likely a footnotemark - do not count as word, but make sure
-                // the footnote words will counted for the correct headline
+                // the footnote words will be counted under the correct headline
                 let markNum = parseInt(item["str"]);
                 // check if the mark isn't placed at the page bottom
                 // and that the mark contains next expected number
@@ -204,7 +204,7 @@ export default async function countWords(src) {
                     // at suspicious x value (likely text in table/equation)
                     itemShouldStartANewLine = true;
                     searchingForNewLine = true;
-                    ignoredWords.push({"words": words, "reason": "Bad word indent text under headline " + subHeadline});
+                    ignoredWords.push({"words": words, "headline": subHeadline, "reason": "unexpected text indent"});
                     continue;
                 }
                 searchingForNewLine = false;
