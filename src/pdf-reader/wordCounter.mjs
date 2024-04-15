@@ -44,7 +44,7 @@ function isSubsectionHeading(item, currentSubHeadline, defaultFontName){
     let plausibleNumbering = getPlausibleNumbering(currentSubHeadline);
     
     // new headline must start with a plausible numbering 
-    return plausibleNumbering.includes(item["str"].split(" ")[0])
+    return plausibleNumbering.includes(item["str"].split(" ")[0]);
 }
 
 /**
@@ -108,6 +108,8 @@ function identifyMultipleMarkers(markNums, expectedMarkNum){
 export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
     
+    let itemsSinceLastSectionHeadline = 0;
+    
     let footnoteHeadlines = [];
     let footnoteCount = 0;
     
@@ -124,9 +126,17 @@ export default async function countWords(src) {
             let fontsize = Math.round(item["height"]);
             let x = Math.round(item["transform"][4]);
             let y = Math.round(item["transform"][5]);
+            //console.log(item);
             
             if(fontsize === 14){
+                // check if this item is part of an existing section headline
+                if(firstSectionFound && itemsSinceLastSectionHeadline < 1){
+                    headline += " " + item["str"];
+                    subHeadline = headline;
+                    continue;
+                }
                 // new section headline found
+                itemsSinceLastSectionHeadline = 0;
                 let prevHeadline = subHeadline;
                 headline = item["str"];
                 subHeadline = headline;
@@ -146,8 +156,8 @@ export default async function countWords(src) {
                 else if(headline.startsWith("1 ")){
                     firstSectionFound = true;// first section found, start counting with the next string
                     itemShouldStartANewLine = item["hasEOL"];
-                    continue;
                 }
+                continue;
             }
             
             // skip word counting?
@@ -188,6 +198,8 @@ export default async function countWords(src) {
                 continue;
             }
             
+            itemsSinceLastSectionHeadline += 1;
+            
             if(fontsize === 10 && x === 83){
                 // words in footnotes
                 words = removeQuotationMarks(words);
@@ -216,6 +228,15 @@ export default async function countWords(src) {
                     itemShouldStartANewLine = item["hasEOL"];
                     continue;
                 }
+                else if(item["fontName"] != defaultFontName && currentCounts["text"] + currentCounts["quotes"] === 0){
+                    // this item could possibly be part of the new subheadline
+                    if(x == 92 || x == 101 || x== 110 || !itemShouldStartANewLine){
+                        // found subheadline longer than one line (suspiciously indented) or split in multiple items
+                        subHeadline += " " + item["str"];
+                        itemShouldStartANewLine = item["hasEOL"];
+                        continue;
+                    }
+                }
                 
                 // find the default text font name, then make sure that font is used before counting words
                 if(!defaultFontName){
@@ -225,7 +246,7 @@ export default async function countWords(src) {
                         defaultFontName = item["fontName"];
                     }
                     else{
-                        ignoredWords.push({"words": words, "reason": "Bad word indent in first text under headline " + subHeadline});
+                        ignoredWords.push({"words": words, "headline": subHeadline, "reason": "unexpected word indent in first text", "x": x});
                         continue;
                     }
                 }
@@ -235,7 +256,7 @@ export default async function countWords(src) {
                     // at suspicious x value (likely text in table/equation)
                     itemShouldStartANewLine = true;
                     searchingForNewLine = true;
-                    ignoredWords.push({"words": words, "headline": subHeadline, "reason": "unexpected text indent"});
+                    ignoredWords.push({"words": words, "headline": subHeadline, "reason": "unexpected text indent", "x": x});
                     continue;
                 }
                 searchingForNewLine = false;
