@@ -109,6 +109,7 @@ export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
     
     let itemsSinceLastSectionHeadline = 0;
+    let headlinePageNum = 0;
     
     let footnoteHeadlines = [];
     let footnoteCount = 0;
@@ -119,8 +120,8 @@ export default async function countWords(src) {
     let [headline, subHeadline, defaultFontName] = ["", "", ""];
     let [firstSectionFound, itemShouldStartANewLine, searchingForNewLine] = [false, false, false];
     
-    for(let i = 1; i <= doc.numPages; i++){
-        const pageContent = await doc.getPage(i).then(page => page.getTextContent());
+    for(let currentPageNum = 1; currentPageNum <= doc.numPages; currentPageNum++){
+        const pageContent = await doc.getPage(currentPageNum).then(page => page.getTextContent());
         
         for(let item of pageContent.items){
             let fontsize = Math.round(item["height"]);
@@ -130,13 +131,15 @@ export default async function countWords(src) {
             
             if(fontsize === 14){
                 // check if this item is part of an existing section headline
-                if(firstSectionFound && itemsSinceLastSectionHeadline < 1){
+                if(firstSectionFound && itemsSinceLastSectionHeadline < 1 && currentPageNum === headlinePageNum){
                     headline += " " + item["str"];
                     subHeadline = headline;
                     continue;
                 }
                 // new section headline found
                 itemsSinceLastSectionHeadline = 0;
+                headlinePageNum = currentPageNum;
+                
                 let prevHeadline = subHeadline;
                 headline = item["str"];
                 subHeadline = headline;
