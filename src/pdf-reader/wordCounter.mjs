@@ -83,6 +83,27 @@ function removeQuotationMarks(words){
     return words.filter(element => !marks.includes(element));
 }
 
+/**
+ * when a footnote marker was found but didn't immediately equal the next expected marker number, check if it consists of multiple expected numbers after each other, ignore otherwise (e.g., if the number belonged to a footnote at the page bottom, which should not be counted again.)
+ */
+function identifyMultipleMarkers(markNums, expectedMarkNum){
+    const expectedMarkNumDigits = parseInt(expectedMarkNum.toString().length);
+    const plausibleNextMarker = parseInt(markNums.substring(0, expectedMarkNumDigits));
+    const remainingMarkNums = markNums.substring(expectedMarkNumDigits);
+    
+    if(expectedMarkNum === plausibleNextMarker){
+        console.log(`expected marker ${expectedMarkNum} matches the found marker ${plausibleNextMarker} in ${markNums}`);
+        if(remainingMarkNums.length > 0){
+            return 1 + identifyMultipleMarkers(remainingMarkNums, expectedMarkNum + 1);
+        }
+        return 1;
+    }
+    else {
+        //console.log(`Warning: the expected marker ${expectedMarkNum} did not fit the found marker ${plausibleNextMarker} in ${markNums}`);
+        return 0;
+    }
+}
+
 
 export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
@@ -142,11 +163,20 @@ export default async function countWords(src) {
                 // likely a footnotemark - do not count as word, but make sure
                 // the footnote words will be counted under the correct headline
                 let markNum = parseInt(item["str"]);
-                // check if the mark isn't placed at the page bottom
-                // and that the mark contains next expected number
-                if(x !== 76 && markNum && markNum == footnoteCount + 1){
-                    footnoteHeadlines.push(subHeadline);
-                    footnoteCount += 1
+                // check that the mark contains next expected number(s)
+                if(markNum){
+                    if(markNum == footnoteCount + 1){
+                        footnoteHeadlines.push(subHeadline);
+                        footnoteCount += 1;
+                    }
+                    else{
+                        // possible shenanigans due to multiple markers in one string
+                        // also, this will return 0 for markers that were found in the page bottom, as those should not be counted
+                        const foundMarkNumsCount = identifyMultipleMarkers(markNum.toString(), footnoteCount + 1);
+                        // append the subheadline as often as there were marks found
+                        footnoteHeadlines = [...footnoteHeadlines, ...Array(foundMarkNumsCount).fill(subHeadline)];
+                        footnoteCount += foundMarkNumsCount;
+                    }
                 }
             }
             
@@ -168,7 +198,8 @@ export default async function countWords(src) {
                     currentCounts["footnotes"] += words.length;
                 }
                 else{
-                    let wordCountElement = wordCounts.find(item => item.headline === correspondingHeadline);
+                    let wordCountElement = wordCounts.find(element => element.headline === correspondingHeadline);
+                    //console.log(item, correspondingHeadline);
                     wordCountElement["words"]["footnotes"].push(...words);
                     wordCountElement["counts"]["footnotes"] += words.length;
                 }

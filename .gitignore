@@ -33,3 +33,5 @@ test*
 .DS_Store
 .vscode/ltex.hiddenFalsePositives.de-DE.txt
 benchmark/latex-cache/main.pdf
+src/*/*.pdf
+*word-*
