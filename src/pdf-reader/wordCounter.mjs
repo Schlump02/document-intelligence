@@ -255,8 +255,14 @@ export default async function countWords(src) {
                 }
                 
                 if((itemShouldStartANewLine || searchingForNewLine) && x != 71){
-                    // line starts or previous word in line started
-                    // at suspicious x value (likely text in table/equation)
+                    // unexpected text indent, check if its part of a \begin{displayquote} block
+                    if(x === 100){
+                        // count words in quotes
+                        currentWords["quotes"].push(...words);
+                        currentCounts["quotes"] += words.length;
+                        continue;
+                    }
+                    // line starts or previous word in line started at suspicious x value (likely text in table/equation)
                     itemShouldStartANewLine = true;
                     searchingForNewLine = true;
                     ignoredWords.push({"words": words, "headline": subHeadline, "reason": "unexpected text indent", "x": x});

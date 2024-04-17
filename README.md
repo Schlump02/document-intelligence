@@ -5,7 +5,7 @@
 ### Benchmark-Dateien
 
 Die Benchmark PDF-Datei enthält:
-- **269** Wörter inkl. wörtliche Zitate / Fußnoten
+- **326** Wörter inkl. wörtliche Zitate / Fußnoten
 - **141** Wörter exkl. wörtliche Zitate / Fußnoten
 
 Diese resultieren aus:
@@ -17,18 +17,21 @@ Diese resultieren aus:
 - 15 in Kapitel 1.2.1
 - 20 in Kapitel 1.2.2
 - 10 in Kapitel 1.2.2.1
+- 0 in Kapitel 1.3
 - 0 in Kapitel 2
 - 6 in Kapitel 2.1
 - 0 in Kapitel 3
 
-**29** Wörtern aus wörtlichen Zitaten, davon:
+**83** Wörtern aus wörtlichen Zitaten, davon:
 - 9 in Kapitel 1 (ohne Unterkapitel)
+- 54 in Kapitel 1.3
 - 20 in Kapitel 2
 
-**99** Wörtern aus Fußnoten, davon:
+**102** Wörtern aus Fußnoten, davon:
 - 14 in Kapitel 1 (ohne Unterkapitel)
 - 62 in Kapitel 1.2.1
 - 20 in Kapitel 1.2.2
+- 3 in Kapitel 1.3
 - 3 in Kapitel 2
 
 ## Autoren
