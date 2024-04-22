@@ -151,6 +151,9 @@ export default async function countWords(src) {
                     if(isChapterAfterLastSection(headline)){
                         // iterated through all sections, finish counting
                         warnings.push("Word count stopped after reaching headline: " + headline);
+                        if(footnoteHeadlines.length > 0){
+                            warnings.push(`Warning: ${footnoteHeadlines.length} footnotes not found.`);
+                        }
                         return {"wordCounts": wordCounts, "warnings": warnings, "ignoredWords": ignoredWords};
                     }
                     // otherwise, re-initialize values

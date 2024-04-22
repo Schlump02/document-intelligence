@@ -18,7 +18,7 @@ console.log = function(...args) {
 };
 
 const pdfPath = '../../benchmark/main.pdf';
-//const pdfPath = 'test.pdf';
+//const pdfPath = 'fixed.pdf';
 
 const output = await countWords(pdfPath);
 console.log(output);
