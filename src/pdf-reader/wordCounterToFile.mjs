@@ -18,6 +18,7 @@ console.log = function(...args) {
 };
 
 const pdfPath = '../../benchmark/main.pdf';
+//const pdfPath = 'broken.pdf';
 //const pdfPath = 'fixed.pdf';
 
 const output = await countWords(pdfPath);

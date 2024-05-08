@@ -99,7 +99,7 @@ function identifyMultipleMarkers(markNums, expectedMarkNum){
         return 1;
     }
     else {
-        //console.log(`Warning: the expected marker ${expectedMarkNum} did not fit the found marker ${plausibleNextMarker} in ${markNums}`);
+        console.log(`Warning: the expected marker ${expectedMarkNum} did not fit the found marker ${plausibleNextMarker} in ${markNums}`);
         return 0;
     }
 }
@@ -184,6 +184,7 @@ export default async function countWords(src) {
                     if(markNum == footnoteCount + 1){
                         footnoteHeadlines.push(subHeadline);
                         footnoteCount += 1;
+                        console.log(`New Marker ${markNum} found under headline ${subHeadline}. footnoteHeadlines is now [${footnoteHeadlines}]`);
                     }
                     else{
                         // possible shenanigans due to multiple markers in one string
@@ -209,15 +210,21 @@ export default async function countWords(src) {
             if(fontsize === 10 && x === 83){
                 // words in footnotes
                 words = removeQuotationMarks(words);
+                if(["Abbildung", "Tabelle"].includes(words[0]) && words[1].includes(":")){
+                    // caption was incorectly identified as footnote
+                    continue;
+                }
+                
                 // make sure to assign the words and word counts to the correct headline
                 let correspondingHeadline = footnoteHeadlines.shift();
                 if(subHeadline === correspondingHeadline){
+                    //console.log("d1", item, correspondingHeadline, footnoteHeadlines);
                     currentWords["footnotes"].push(...words);
                     currentCounts["footnotes"] += words.length;
                 }
                 else{
                     let wordCountElement = wordCounts.find(element => element.headline === correspondingHeadline);
-                    //console.log(item, correspondingHeadline);
+                    //console.log("d2", item, correspondingHeadline, footnoteHeadlines);
                     wordCountElement["words"]["footnotes"].push(...words);
                     wordCountElement["counts"]["footnotes"] += words.length;
                 }
