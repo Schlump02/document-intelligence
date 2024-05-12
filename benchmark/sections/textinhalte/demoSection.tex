@@ -82,10 +82,114 @@ direktes Zitat (Seitenzahlen aus der .bib)\directcite{theisen2011}\\% Direkte Zi
 direktes Zitat (individuelle Seitenzahlen)\directcite[23f.]{theisen2011}
 
 \subsubsubsection{Beispiel für eine sub-sub-sub-Überschrift}
-
 Diese Vorlage unterstützt (technisch und moralisch) nur max. vierfache Untergliederung.
 
 \subsection{Displayquote}
 \begin{displayquote}
     Barrierefrei sind bauliche und sonstige Anlagen, Verkehrsmittel, technische Gebrauchsgegenstände, Systeme der Informationsverarbeitung, akustische und visuelle Informationsquellen und Kommunikationseinrichtungen sowie andere gestaltete Lebensbereiche, wenn sie für Menschen mit Behinderungen in der allgemein üblichen Weise, ohne besondere Erschwernis und grundsätzlich ohne fremde Hilfe auffindbar, zugänglich und nutzbar sind. Hierbei ist die Nutzung behinderungsbedingt notwendiger Hilfsmittel zulässig.\footnote{§ 4 BGG}
 \end{displayquote}
+
+%\iffalse
+\subsection{Listen}
+\begin{enumerate}
+    \item First item
+    \item Second item
+    \item Third item
+    \item Fourth item
+    \item Certainly! Here is an example of the modified LaTeX code with Lorem Ipsum text added to the items: item
+    \item Sixth item
+    \item Seventh item
+    \item Eighth item
+    \begin{enumerate}
+        \item Second level item 1
+        \item Second level item 2
+        \item Second level item 3
+        \item Second level item 4
+        \item Second level item 5
+        \item Second level item 6
+        \item Second level item 7Certainly! Here is an example of the modified LaTeX code with Lorem Ipsum text added to the items: item
+        \begin{center}
+            \begin{table}[h]
+            \centering
+            \begin{tabular}{|c|p{6cm}|}
+                \hline
+                \textbf{Datum} & \textbf{Aktivitäten} \\
+                \hline
+                Kebab & 7€ \\
+                \hline
+                Adana & \begin{itemize}
+                    \item \textbf{Groß}: 8€
+                    \item \textbf{Klein}: 6€
+                \end{itemize} \\
+                \hline
+                Köfte & \begin{itemize}
+                    \item 5 Stück: 8€
+                    \item 2 Stück: 6€
+                \end{itemize}\\
+                \hline
+                Mercimek Suppe & 3€ \\
+                \hline
+                Dönerteller & 15€ \\
+                \hline
+            \end{tabular}
+            \captionwithfootnotemark{Beispiel Tabelle.}% Die (verpflichtende) Quellenangabe hierzu wird durch den \footcitetext-Befehl weiter unten gesetzt
+            \label{tab:example}
+            \end{table}
+        \end{center}
+        \footcitetext[Vgl.][\printfield{pages}]{DemoQuelle}\\ [-4em]
+        \item Second level item 8Certainly! Here is an example of the modified LaTeX code with Lorem Ipsum text added to the items: item
+        \item Second level item 9
+        \item Second level item 10Certainly! Here is an example of the modified LaTeX code with Lorem Ipsum text added to the items: item
+        \item Second level item 11
+        \item Second level item 12
+        \begin{enumerate}
+            \renewcommand{\theenumii}{\theenumi.\arabic{enumii}}
+            \item Third level item
+            \item Third level itemCertainly! Here is an example of the modified LaTeX code with Lorem Ipsum text added to the items: item
+            \item Third level item
+            \begin{enumerate}
+                \renewcommand{\theenumii}{\theenumi.\arabic{enumii}}
+                \item Fourth level item
+                \item Fourth level itemCertainly! Here is an example of the modified LaTeX code with Lorem Ipsum text added to the items: item
+                \item Fourth level item
+            \end{enumerate}
+        \end{enumerate}
+    \end{enumerate}
+    \item Ninth item
+    \item Tenth item
+    \item Eleventh item
+    \item Twelfth item
+    \item Thirteenth item
+    \item Fourteenth item
+    \item Fifteenth item
+    \item Eleventh item
+    \item Twelfth item
+    \item Thirteenth item
+    \item Fourteenth item
+    \item Fifteenth item
+\end{enumerate}
+hi
+\begin{itemize}
+    \item First item
+    \item Second item
+    \begin{itemize}
+        \item unordered second level item 1
+        \item unordered second level item 2 Certainly! Here is an example of the modified LaTeX code with Lorem Ipsum text
+        added to the items: item
+        \item unordered second level item 3
+        \begin{itemize}
+            \item unordered Third level item 1
+            \item unordered Third level item 2 Certainly! Here is an example of the modified LaTeX code with Lorem Ipsum text
+            added to the items: item
+            \item unordered Third level item 3
+            \begin{itemize}
+                \item unordered Fourth level item 1
+                \item unordered Fourth level item 2 Certainly! Here is an example of the modified LaTeX code with Lorem Ipsum text
+                added to the items: item
+                \item unordered Fourth level item 3
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+    \item Third item
+\end{itemize}
+%\fi

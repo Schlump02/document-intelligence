@@ -18,11 +18,21 @@ console.log = function(...args) {
 };
 
 const pdfPath = '../../benchmark/main.pdf';
-//const pdfPath = 'broken.pdf';
+//const pdfPath = 'broken_old3.pdf';
 //const pdfPath = 'fixed.pdf';
+//const pdfPath = '../../../bachelor-thesis/main.pdf';
 
 const output = await countWords(pdfPath);
-console.log(output);
+console.log("\n\nOutput:", output);
+
+let counters = {"text": 0, "quotes": 0, "footnotes": 0};
+for(let section of output["wordCounts"]){
+    counters["text"] += section["counts"]["text"];
+    counters["quotes"] += section["counts"]["quotes"];
+    counters["footnotes"] += section["counts"]["footnotes"];
+}
+console.log("\n\nWörter Gesamt:", counters);
+
 
 // Close the stream when done
 stream.end();

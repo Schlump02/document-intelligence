@@ -57,10 +57,10 @@ function getSanitizedWords(rawStr){
         rawStr = rawStr.replace(new RegExp(char, "g"), ' ' + char + ' ')
     }
     
-    const unwantedWords = ["", ",", ".", ";", ":", "-", "_", "|", "!", "?", "'", "²",
-                            "`", "/", "\\", "(", ")", "[", "]", "{", "}", "<", "³",
-                            "•", "$", "€", "[sic]", "[sic!]", "(!)", "[!]", "\\.",
-                            ">", "*", "&", "#", "@", "%", "^", "=", "+", "~", "–"
+    const unwantedWords = ["", ",", ".", ";", ":", "_", "|", "!", "?", "'", "²", "³",
+                            "`", "/", "\\", "(", ")", "[", "]", "{", "}", "<", "~",
+                            "$", "€", "[sic]", "[sic!]", "(!)", "[!]", "\\.",
+                            ">", "*", "&", "#", "@", "%", "^", "=", "+"
                         ];
     const rawWords = rawStr.split(" ");
     let words = [];
@@ -74,6 +74,62 @@ function getSanitizedWords(rawStr){
     return words;
 }
 
+function checkListLevel(x, rawStr, currentListLevel){
+    let allegedItemIdentifier = "";
+    if(x === 85){
+        if(rawStr.startsWith("•")){
+            // unordered list
+            return 1;
+        }
+        allegedItemIdentifier = rawStr.split(".")[0];
+        if(!isNaN(allegedItemIdentifier) && allegedItemIdentifier < 10){
+            // ordered list item < 10.
+            return 1;
+        }
+    }
+    else if(x === 79){
+        allegedItemIdentifier = rawStr.split(".")[0];
+        if(!isNaN(allegedItemIdentifier) && allegedItemIdentifier >= 10){
+            // ordered list item > 10.
+            return 1;
+        }
+    }
+    else if(x > 107 && x < 115){// looks like second level list
+        if(rawStr.startsWith("◦") || rawStr.startsWith("–")){
+            // unordered list
+            return 2;
+        }
+        allegedItemIdentifier = rawStr.split(".")[0];
+        if(rawStr.split(" ")[0].includes(")")){
+            // ordered list
+            return 2;
+        }
+    }
+    else if(x < 139){// looks like third level list
+        if(rawStr.startsWith("∗") || rawStr.startsWith("–") || rawStr.startsWith("-")){
+            // unordered list
+            return 3;
+        }
+        allegedItemIdentifier = rawStr.split(" ")[0];
+        if(allegedItemIdentifier.includes(".") && allegedItemIdentifier.toLowerCase() === allegedItemIdentifier){
+            // ordered list (small roman numerals)
+            return 3;
+        }
+    }
+    else if(x < 156){// looks like fourth level list
+        if(rawStr.startsWith("·")){
+            // unordered list
+            return 4;
+        }
+        allegedItemIdentifier = rawStr.split(" ")[0];
+        if(allegedItemIdentifier.includes(".") && allegedItemIdentifier.toUpperCase() === allegedItemIdentifier){
+            // ordered list (uppercase letters)
+            return 4;
+        }
+    }
+    return 0;
+}
+
 function containsQuotes(str){
     return str.includes('"') || str.includes("„") || str.includes("“")
 }
@@ -81,6 +137,11 @@ function containsQuotes(str){
 function removeQuotationMarks(words){
     const marks = ['"', '„', '“'];
     return words.filter(element => !marks.includes(element));
+}
+
+function removeListLabelChars(words){
+    const labels = ['–', '-', '•', '◦', '∗', '·'];
+    return words.filter(element => !labels.includes(element));
 }
 
 /**
@@ -109,6 +170,10 @@ export default async function countWords(src) {
     const doc = await pdfjs.getDocument(src).promise;
     
     let itemsSinceLastSectionHeadline = 0;
+    let itemsSinceLastFootnoteMarker = 0;
+    let listLevel = 0;
+    
+    let expectedLineStartX = [71];
     let headlinePageNum = 0;
     
     let footnoteHeadlines = [];
@@ -127,7 +192,7 @@ export default async function countWords(src) {
             let fontsize = Math.round(item["height"]);
             let x = Math.round(item["transform"][4]);
             let y = Math.round(item["transform"][5]);
-            //console.log(item);
+            console.log(item);
             
             if(fontsize === 14){
                 // check if this item is part of an existing section headline
@@ -167,9 +232,12 @@ export default async function countWords(src) {
             }
             
             // skip word counting?
-            if(!firstSectionFound           // don't count words outside of sections
-                || item["str"].length < 1   // no words to count
-                || y < 60){                 // only page numbers are placed this low
+            if(!firstSectionFound              // don't count words outside of sections
+                || item["str"].length < 1      // no words to count
+                || item["transform"][1] != 0   // text is rotated
+                || item["transform"][2] != 0   // text is rotated
+                || item["transform"][0] != item["transform"][3]   // text is rotated
+                || y < 60){                    // only page numbers are placed this low
                 
                 itemShouldStartANewLine = item["hasEOL"];
                 continue;
@@ -200,8 +268,12 @@ export default async function countWords(src) {
             // sanitize words before counting
             let words = getSanitizedWords(item["str"]);
             if(!words || !words.length){
-                // no words to count
                 itemShouldStartANewLine = item["hasEOL"];
+                if(itemShouldStartANewLine && !expectedLineStartX.includes(x)){
+                    // unexpected text indent
+                    searchingForNewLine = true;
+                }
+                // no words to count
                 continue;
             }
             
@@ -210,10 +282,13 @@ export default async function countWords(src) {
             if(fontsize === 10 && x === 83){
                 // words in footnotes
                 words = removeQuotationMarks(words);
-                if(["Abbildung", "Tabelle"].includes(words[0]) && words[1].includes(":")){
-                    // caption was incorectly identified as footnote
+                words = removeListLabelChars(words);
+                
+                if(["Abbildung", "Tabelle"].includes(words[0]) && words[1].includes(":") && itemsSinceLastFootnoteMarker > 2){
+                    // caption was incorrectly identified as footnote
                     continue;
                 }
+                itemsSinceLastFootnoteMarker = 0;
                 
                 // make sure to assign the words and word counts to the correct headline
                 let correspondingHeadline = footnoteHeadlines.shift();
@@ -230,6 +305,8 @@ export default async function countWords(src) {
                 }
             }
             else if(fontsize === 12){
+                itemsSinceLastFootnoteMarker += 1;
+                
                 // search for subsections
                 if(isSubsectionHeading(item, subHeadline, defaultFontName)){
                     // save word counts
@@ -264,24 +341,46 @@ export default async function countWords(src) {
                     }
                 }
                 
-                if((itemShouldStartANewLine || searchingForNewLine) && x != 71){
-                    // unexpected text indent, check if its part of a \begin{displayquote} block
+                console.log((itemShouldStartANewLine || searchingForNewLine) && !expectedLineStartX.includes(x));
+                if((itemShouldStartANewLine || searchingForNewLine) && !expectedLineStartX.includes(x)){
+                    // unexpected text indent
+                    
+                    //check if its part of a \begin{displayquote} block
                     if(x === 100){
                         // count words in quotes
                         currentWords["quotes"].push(...words);
                         currentCounts["quotes"] += words.length;
                         continue;
                     }
-                    // line starts or previous word in line started at suspicious x value (likely text in table/equation)
-                    itemShouldStartANewLine = true;
-                    searchingForNewLine = true;
-                    ignoredWords.push({"words": words, "headline": subHeadline, "reason": "unexpected text indent", "x": x});
-                    continue;
+                    
+                    // check if it might be part of an (un)ordered list
+                    listLevel = checkListLevel(x, item["str"], listLevel);
+                    if(listLevel > 0){
+                        console.log("d3 - beginning of list found with listLevel", listLevel, "and words", words);
+                        
+                        // lines in lists start at x = 100 for first level, x = 126 for second level etc.
+                        expectedLineStartX = [71, 100, 126, 148, 168].slice(0, listLevel + 1);
+                        if(words.length < 2){ continue; }
+                        words.shift();// count words except for numbering marker
+                    }
+                    else{
+                        // line starts or previous word in line started at suspicious x value (likely text in table/equation)
+                        itemShouldStartANewLine = true;
+                        searchingForNewLine = true;
+                        ignoredWords.push({"words": words, "headline": subHeadline, "reason": "unexpected text indent", "x": x});
+                        continue;
+                    }
                 }
-                searchingForNewLine = false;
-                itemShouldStartANewLine = item["hasEOL"];
                 
                 // words are in text within a section
+                searchingForNewLine = false;
+                itemShouldStartANewLine = item["hasEOL"];
+                words = removeListLabelChars(words);
+                
+                if(x === 71){
+                    // list indentation is over, expect only normal line start
+                    expectedLineStartX = [71];
+                }
                 
                 // count words inside or outside of quotes
                 if(!containsQuotes(item["str"])){
