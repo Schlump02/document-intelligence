@@ -76,8 +76,10 @@ function getSanitizedWords(rawStr){
 
 function checkListLevel(x, rawStr, currentListLevel){
     let allegedItemIdentifier = "";
+    const undorderedListLabels = ['–', '-', '•', '◦', '∗', '·'];
+    
     if(x === 85){
-        if(rawStr.startsWith("•")){
+        if(undorderedListLabels.includes(rawStr.split(" ")[0])){
             // unordered list
             return 1;
         }
@@ -95,7 +97,7 @@ function checkListLevel(x, rawStr, currentListLevel){
         }
     }
     else if(x > 107 && x < 115){// looks like second level list
-        if(rawStr.startsWith("◦") || rawStr.startsWith("–")){
+        if(undorderedListLabels.includes(rawStr.split(" ")[0])){
             // unordered list
             return 2;
         }
@@ -106,7 +108,7 @@ function checkListLevel(x, rawStr, currentListLevel){
         }
     }
     else if(x < 139){// looks like third level list
-        if(rawStr.startsWith("∗") || rawStr.startsWith("–") || rawStr.startsWith("-")){
+        if(undorderedListLabels.includes(rawStr.split(" ")[0])){
             // unordered list
             return 3;
         }
@@ -117,7 +119,7 @@ function checkListLevel(x, rawStr, currentListLevel){
         }
     }
     else if(x < 156){// looks like fourth level list
-        if(rawStr.startsWith("·")){
+        if(undorderedListLabels.includes(rawStr.split(" ")[0])){
             // unordered list
             return 4;
         }
@@ -140,8 +142,8 @@ function removeQuotationMarks(words){
 }
 
 function removeListLabelChars(words){
-    const labels = ['–', '-', '•', '◦', '∗', '·'];
-    return words.filter(element => !labels.includes(element));
+    const undorderedListLabels = ['–', '-', '•', '◦', '∗', '·'];
+    return words.filter(element => !undorderedListLabels.includes(element));
 }
 
 /**
@@ -318,7 +320,7 @@ export default async function countWords(src) {
                     itemShouldStartANewLine = item["hasEOL"];
                     continue;
                 }
-                else if(item["fontName"] != defaultFontName && currentCounts["text"] + currentCounts["quotes"] === 0){
+                else if(item["fontName"] != defaultFontName && currentCounts["text"] + currentCounts["quotes"] === 0 && listLevel < 1){
                     // this item could possibly be part of the new subheadline
                     if(x == 92 || x == 101 || x== 110 || !itemShouldStartANewLine){
                         // found subheadline longer than one line (suspiciously indented) or split in multiple items

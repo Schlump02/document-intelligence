@@ -17,8 +17,8 @@ console.log = function(...args) {
     stream.write(message + '\n');
 };
 
-const pdfPath = '../../benchmark/main.pdf';
-//const pdfPath = 'broken_old3.pdf';
+//const pdfPath = '../../benchmark/main.pdf';
+const pdfPath = 'broken.pdf';
 //const pdfPath = 'fixed.pdf';
 //const pdfPath = '../../../bachelor-thesis/main.pdf';
 

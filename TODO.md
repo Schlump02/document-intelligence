@@ -1,6 +1,4 @@
 ## PDF-Reader
-- support headlines spanning over multiple lines
-- add warnings
 
 ### allow different options (?)
 - dont count single characters
