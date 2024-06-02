@@ -74,12 +74,56 @@ function getSanitizedWords(rawStr){
     return words;
 }
 
+// find out if the string is the start of an unordered list item
+// since deeper list levels may be a mix of ordered and unordered lists,
+// all labels typical top one level must be checked, up to the max possible level
+function containsUnorderedListLabelsUpToLevel(rawStr, level){
+    if(level >= 1){
+        if(rawStr.startsWith("•")) { return true; }
+    }
+    if(level >= 2){
+        if(rawStr.startsWith("◦") || rawStr.startsWith("–")) { return true; }
+    }
+    if(level >= 3){
+        if(rawStr.startsWith("∗") || rawStr.startsWith("–") || rawStr.startsWith("-")) { return true; }
+    }
+    if(level >= 4){
+        if(rawStr.startsWith("·")) { return true; }
+    }
+    return false;
+}
+function containsOrderedListLabelsUpToLevel(rawStr, level){
+    let allegedItemIdentifier = "";
+    if(level >= 1){
+        allegedItemIdentifier = rawStr.split(".")[0];
+        if(!isNaN(allegedItemIdentifier)) { return true; }// 1. 2. 3. ...
+    }
+    if(level >= 2){
+        allegedItemIdentifier = rawStr.split(".")[0];
+        if(rawStr.split(" ")[0].includes(")")) { return true; }// a) b) c) ...
+    }
+    if(level >= 3){
+        allegedItemIdentifier = rawStr.split(" ")[0];// i. ii. iii. ...
+        if(allegedItemIdentifier.includes(".") && allegedItemIdentifier.toLowerCase() === allegedItemIdentifier) { return true; }
+    }
+    if(level >= 4){
+        allegedItemIdentifier = rawStr.split(" ")[0];// A. B. C. ...
+        if(allegedItemIdentifier.includes(".") && allegedItemIdentifier.toUpperCase() === allegedItemIdentifier) { return true; }
+    }
+    return false;
+}
+function containsCorrectLabels(rawStr, level){
+    if(containsUnorderedListLabelsUpToLevel(rawStr, level) || containsOrderedListLabelsUpToLevel(rawStr, level)){
+        return true;
+    }
+    return false;
+}
+
 function checkListLevel(x, rawStr, currentListLevel){
     let allegedItemIdentifier = "";
-    const undorderedListLabels = ['–', '-', '•', '◦', '∗', '·'];
     
     if(x === 85){
-        if(undorderedListLabels.includes(rawStr.split(" ")[0])){
+        if(containsUnorderedListLabelsUpToLevel(rawStr, 1)){
             // unordered list
             return 1;
         }
@@ -97,37 +141,13 @@ function checkListLevel(x, rawStr, currentListLevel){
         }
     }
     else if(x > 107 && x < 115){// looks like second level list
-        if(undorderedListLabels.includes(rawStr.split(" ")[0])){
-            // unordered list
-            return 2;
-        }
-        allegedItemIdentifier = rawStr.split(".")[0];
-        if(rawStr.split(" ")[0].includes(")")){
-            // ordered list
-            return 2;
-        }
+        if(containsCorrectLabels(rawStr, 2)){ return 2; }
     }
     else if(x < 139){// looks like third level list
-        if(undorderedListLabels.includes(rawStr.split(" ")[0])){
-            // unordered list
-            return 3;
-        }
-        allegedItemIdentifier = rawStr.split(" ")[0];
-        if(allegedItemIdentifier.includes(".") && allegedItemIdentifier.toLowerCase() === allegedItemIdentifier){
-            // ordered list (small roman numerals)
-            return 3;
-        }
+        if(containsCorrectLabels(rawStr, 3)){ return 3; }
     }
-    else if(x < 156){// looks like fourth level list
-        if(undorderedListLabels.includes(rawStr.split(" ")[0])){
-            // unordered list
-            return 4;
-        }
-        allegedItemIdentifier = rawStr.split(" ")[0];
-        if(allegedItemIdentifier.includes(".") && allegedItemIdentifier.toUpperCase() === allegedItemIdentifier){
-            // ordered list (uppercase letters)
-            return 4;
-        }
+    else if(x < 160){// looks like fourth level list
+        if(containsCorrectLabels(rawStr, 4)){ return 4; }
     }
     return 0;
 }
@@ -233,13 +253,19 @@ export default async function countWords(src) {
                 continue;
             }
             
+            // skip page numbers
+            if(y < 60){
+                // only page numbers are placed this low
+                itemShouldStartANewLine = true;
+                continue;
+            }
+            
             // skip word counting?
             if(!firstSectionFound              // don't count words outside of sections
                 || item["str"].length < 1      // no words to count
                 || item["transform"][1] != 0   // text is rotated
                 || item["transform"][2] != 0   // text is rotated
-                || item["transform"][0] != item["transform"][3]   // text is rotated
-                || y < 60){                    // only page numbers are placed this low
+                || item["transform"][0] != item["transform"][3]){ // text is rotated
                 
                 itemShouldStartANewLine = item["hasEOL"];
                 continue;
@@ -356,9 +382,10 @@ export default async function countWords(src) {
                     }
                     
                     // check if it might be part of an (un)ordered list
+                    console.log("d3 - checking if list starts with string:", item["str"])
                     listLevel = checkListLevel(x, item["str"], listLevel);
                     if(listLevel > 0){
-                        console.log("d3 - beginning of list found with listLevel", listLevel, "and words", words);
+                        console.log("d4 - beginning of list found with listLevel", listLevel, "and words", words);
                         
                         // lines in lists start at x = 100 for first level, x = 126 for second level etc.
                         expectedLineStartX = [71, 100, 126, 148, 168].slice(0, listLevel + 1);
