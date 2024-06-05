@@ -53,24 +53,24 @@ function isSubsectionHeading(item, currentSubHeadline, defaultFontName){
  * removes empty spaces, punctuation marks and similar unwanted strings. Treats certain special characters as separate words.
  */
 function getSanitizedWords(rawStr){
-    const charsAsWords = ['"', '„', '“', "/"]
+    const charsAsWords = ['"', '„', '“', "/"];
     // treat these characters as words, making it easier to filter them out later
     for(let char of charsAsWords){
         rawStr = rawStr.replace(new RegExp(char, "g"), ' ' + char + ' ')
     }
     
-    const unwantedWords = ["", ",", ".", ";", ":", "_", "|", "!", "?", "'", "²", "³",
-                            "`", "/", "\\", "(", ")", "[", "]", "{", "}", "<", "~",
-                            "$", "€", "[sic]", "[sic!]", "(!)", "[!]", "\\.",
-                            ">", "*", "&", "#", "@", "%", "^", "=", "+",
-                            "[...]", "[.", ".]"
-                        ];
+    const unwantedWords = ["[sic]", "[sic!]"];
+    const containsLetterOrNumber = str => /[a-zA-Z0-9]/.test(str);
+    
     const rawWords = rawStr.split(" ");
     let words = [];
     
+    const undorderedListLabels = ['–', '-', '•', '◦', '∗', '·'];
+    let AcceptableWords = undorderedListLabels.concat(['"', '„', '“', "§"]);
+    
     for(let word of rawWords){
         word = word.trim();
-        if(!unwantedWords.includes(word)){
+        if(!unwantedWords.includes(word) && (containsLetterOrNumber(word) || AcceptableWords.includes(word))){
             words.push(word);
         }
     }
