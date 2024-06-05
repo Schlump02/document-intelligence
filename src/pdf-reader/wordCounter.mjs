@@ -1,7 +1,9 @@
 import * as pdfjs from "pdfjs-dist";
 
 function initializeStateVars(){
-    return [{"text": 0, "quotes": 0, "footnotes": 0}, {"text": [], "quotes": [], "footnotes": []}, false]
+    return [{"text": 0, "quotes": 0, "footnotes": 0, "descriptions": 0},
+            {"text": [], "quotes": [], "footnotes": [], "descriptions": []},
+            false]
 }
 
 function isChapterAfterLastSection(headline){
@@ -205,7 +207,7 @@ export default async function countWords(src) {
     
     let [wordCounts, warnings, ignoredWords] = [[], [], []];
     let [headline, subHeadline, defaultFontName] = ["", "", ""];
-    let [firstSectionFound, itemShouldStartANewLine, searchingForNewLine] = [false, false, false];
+    let [firstSectionFound, itemShouldStartANewLine, searchingForNewLine, currentlyInLegend] = [false, false, false, false];
     
     for(let currentPageNum = 1; currentPageNum <= doc.numPages; currentPageNum++){
         const pageContent = await doc.getPage(currentPageNum).then(page => page.getTextContent());
@@ -307,32 +309,45 @@ export default async function countWords(src) {
             
             itemsSinceLastSectionHeadline += 1;
             
-            if(fontsize === 10 && x === 83){
-                // words in footnotes
-                words = removeQuotationMarks(words);
-                words = removeListLabelChars(words);
-                
-                if(["Abbildung", "Tabelle"].includes(words[0]) && words[1].includes(":") && itemsSinceLastFootnoteMarker > 2){
-                    // caption was incorrectly identified as footnote
-                    continue;
+            if(fontsize === 10){
+                if(words.length >= 2 && ["Abbildung", "Abb.", "Tabelle", "Tab."].includes(words[0]) && words[1].includes(":")){
+                    // check if words are start of new description
+                    currentlyInLegend = true;
+                    words.splice(0, 2);// remove description identifier
+                    if(words.length < 1) { continue; }
                 }
-                itemsSinceLastFootnoteMarker = 0;
-                
-                // make sure to assign the words and word counts to the correct headline
-                let correspondingHeadline = footnoteHeadlines.shift();
-                if(subHeadline === correspondingHeadline){
-                    //console.log("d1", item, correspondingHeadline, footnoteHeadlines);
-                    currentWords["footnotes"].push(...words);
-                    currentCounts["footnotes"] += words.length;
+                else if(x === 83){
+                    // words in footnotes
+                    itemsSinceLastFootnoteMarker = 0;
+                    currentlyInLegend = false;
+                    
+                    words = removeQuotationMarks(words);
+                    words = removeListLabelChars(words);
+                    
+                    // make sure to assign the words and word counts to the correct headline
+                    let correspondingHeadline = footnoteHeadlines.shift();
+                    if(subHeadline === correspondingHeadline){
+                        //console.log("d1", item, correspondingHeadline, footnoteHeadlines);
+                        currentWords["footnotes"].push(...words);
+                        currentCounts["footnotes"] += words.length;
+                    }
+                    else{
+                        let wordCountElement = wordCounts.find(element => element.headline === correspondingHeadline);
+                        //console.log("d2", item, correspondingHeadline, footnoteHeadlines);
+                        wordCountElement["words"]["footnotes"].push(...words);
+                        wordCountElement["counts"]["footnotes"] += words.length;
+                    }
                 }
-                else{
-                    let wordCountElement = wordCounts.find(element => element.headline === correspondingHeadline);
-                    //console.log("d2", item, correspondingHeadline, footnoteHeadlines);
-                    wordCountElement["words"]["footnotes"].push(...words);
-                    wordCountElement["counts"]["footnotes"] += words.length;
+                if(currentlyInLegend){
+                    // words in a description
+                    currentWords["descriptions"].push(...words);
+                    currentCounts["descriptions"] += words.length;
                 }
             }
-            else if(fontsize === 12){
+            
+            if(fontsize > 10) { currentlyInLegend = false; }
+            
+            if(fontsize === 12){
                 itemsSinceLastFootnoteMarker += 1;
                 
                 // search for subsections
@@ -346,7 +361,9 @@ export default async function countWords(src) {
                     itemShouldStartANewLine = item["hasEOL"];
                     continue;
                 }
-                else if(item["fontName"] != defaultFontName && currentCounts["text"] + currentCounts["quotes"] === 0 && listLevel < 1){
+                else if(item["fontName"] != defaultFontName
+                        && currentCounts["text"] + currentCounts["quotes"] + currentCounts["descriptions"] === 0
+                        && listLevel < 1){
                     // this item could possibly be part of the new subheadline
                     if(x == 92 || x == 101 || x== 110 || !itemShouldStartANewLine){
                         // found subheadline longer than one line (suspiciously indented) or split in multiple items
