@@ -53,7 +53,7 @@ function isSubsectionHeading(item, currentSubHeadline, defaultFontName){
  * removes empty spaces, punctuation marks and similar unwanted strings. Treats certain special characters as separate words.
  */
 function getSanitizedWords(rawStr){
-    const charsAsWords = ['"', '„', '“', "f\\.", "–", "\\.", "/"]
+    const charsAsWords = ['"', '„', '“', "/"]
     // treat these characters as words, making it easier to filter them out later
     for(let char of charsAsWords){
         rawStr = rawStr.replace(new RegExp(char, "g"), ' ' + char + ' ')
