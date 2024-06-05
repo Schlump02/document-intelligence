@@ -17,10 +17,10 @@ console.log = function(...args) {
     stream.write(message + '\n');
 };
 
-//const pdfPath = '../../benchmark/main.pdf';
+const pdfPath = '../../benchmark/main.pdf';
 //const pdfPath = 'broken.pdf';
 //const pdfPath = 'fixed.pdf';
-const pdfPath = '../../../bachelor-thesis/main.pdf';
+//const pdfPath = '../../../bachelor-thesis/main.pdf';
 
 const output = await countWords(pdfPath);
 console.log("\n\nOutput:", output);
