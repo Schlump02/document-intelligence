@@ -341,6 +341,9 @@ export default async function countWords(src) {
                 }
                 if(currentlyInLegend){
                     // words in a description
+                    words = removeQuotationMarks(words);
+                    words = removeListLabelChars(words);
+                    
                     currentWords["descriptions"].push(...words);
                     currentCounts["descriptions"] += words.length;
                 }
@@ -394,6 +397,9 @@ export default async function countWords(src) {
                     //check if its part of a \begin{displayquote} block
                     if(x === 100){
                         // count words in quotes
+                        words = removeQuotationMarks(words);
+                        words = removeListLabelChars(words);
+                    
                         currentWords["quotes"].push(...words);
                         currentCounts["quotes"] += words.length;
                         continue;
