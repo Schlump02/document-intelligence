@@ -335,8 +335,13 @@ export default async function countWords(src) {
                     else{
                         let wordCountElement = wordCounts.find(element => element.headline === correspondingHeadline);
                         //console.log("d2", item, correspondingHeadline, footnoteHeadlines);
-                        wordCountElement["words"]["footnotes"].push(...words);
-                        wordCountElement["counts"]["footnotes"] += words.length;
+                        if(wordCountElement){
+                            wordCountElement["words"]["footnotes"].push(...words);
+                            wordCountElement["counts"]["footnotes"] += words.length;
+                        }
+                        else{
+                            console.log("No wordCountElement found for headline:", correspondingHeadline);
+                        }
                     }
                 }
                 if(currentlyInLegend){
